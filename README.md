@@ -1,150 +1,435 @@
-```markdown
 # 🏎️ Fanalytics Data Engine
+
+<div align="center">
+
+### **The analytics engine powering the Fanalytics Formula 1 dashboard**
+
+*A production-style ETL pipeline that transforms two decades of Formula 1 race data into intelligent driver and circuit analytics.*
+
+<br>
 
 ![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python)
 ![Pandas](https://img.shields.io/badge/Pandas-Data_Engineering-150458?logo=pandas)
 ![FastF1](https://img.shields.io/badge/FastF1-Jolpica_API-red)
-![GitHub Actions](https://img.shields.io/badge/Automated-Cron_Job-2088FF?logo=github-actions)
+![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-Automated-success?logo=github-actions)
+![License](https://img.shields.io/badge/Status-Active-success)
 
-## 🚀 Overview
-The Fanalytics Data Engine is a standalone, automated Python ETL (Extract, Transform, Load) pipeline. It acts as the algorithmic "brain" behind the Fanalytics React dashboard. 
-
-Instead of relying on basic API queries that just list static point totals, this engine processes deep historical Formula 1 data spanning two decades. It dynamically engineers complex predictive metrics (like Driver Momentum, Racecraft Indices, and Track Degradation Scales) and exports polished, lightweight JSON models for the React frontend to serve directly.
+</div>
 
 ---
 
-## 🏗️ Architecture & Data Flow
+# 📖 Overview
 
-The pipeline executes in a strict chronological sequence, turning raw relational database inputs into highly structured features.
+The **Fanalytics Data Engine** is a standalone analytics backend responsible for collecting, processing, engineering, and exporting Formula 1 race intelligence for the **Fanalytics React Dashboard**.
+
+Rather than displaying raw statistics such as championship standings or race results, the engine derives contextual performance metrics from historical race data spanning **2006 to the present**, generating lightweight JSON datasets optimized for frontend consumption.
+
+The entire pipeline is fully automated through **GitHub Actions**, allowing new race weekends to be reflected in the dashboard without manual intervention.
+
+---
+
+# ✨ Key Features
+
+- 🏁 Historical Formula 1 Data Lake (2006–Present)
+- ⚡ Automated ETL Pipeline
+- 📈 Dynamic Driver & Team Momentum Ratings
+- 🧠 Driver Racecraft Analytics
+- 🛞 Circuit Fingerprinting
+- 🏎️ Tire Degradation Modeling
+- 🎯 Driver–Track Mastery Matrix
+- 📦 JSON API Generation for React
+- ☁️ Weekly Cloud Automation using GitHub Actions
+- 🔄 Incremental Race Updates via Jolpica API
+
+---
+
+# 🏗️ System Architecture
 
 ```text
-[Historical Kaggle DB Dump (2006-2023)] + [Live API Updates via FastF1/Jolpica]
-          │
-          ▼
-1. INGESTION LAYER (data/raw/)
-          │
-          ▼
-2. FEATURE FACTORY (pandas DataFrames)
-   ├─ Dynamic Power Ratings (Time-decayed performance momentum)
-   ├─ Track Fingerprinting (Pit-stop based tire deg, street vs. perm)
-   └─ Driver/Track Mastery Matrix (Hierarchical track suitability)
-          │
-          ▼
-3. EXPORT LAYER (data/export/)
-   └─ insights.json, tracks.json (Ready for React TypeScript Interfaces)
-          │
-          ▼
-4. CLOUD AUTOMATION (GitHub Actions)
-   └─ Commits JSON files to repo -> Triggers Vercel UI deploy
-
+                 Historical Formula 1 Database
+                 (Kaggle + Ergast/Jolpica)
+                           │
+                           ▼
+                 Data Ingestion Layer
+                           │
+                           ▼
+              master_historical.csv
+                           │
+          ┌────────────────┼────────────────┐
+          ▼                ▼                ▼
+ Track Profiles      Power Ratings      Mastery Matrix
+          │                │                │
+          └────────────────┼────────────────┘
+                           ▼
+                  JSON Export Builder
+                           │
+                           ▼
+                 insights.json
+                 tracks.json
+                           │
+                           ▼
+              React / Next.js Dashboard
+                           │
+                           ▼
+                 GitHub Actions Pipeline
+                           │
+                           ▼
+                 Automatic Weekly Updates
 ```
 
 ---
 
-## 📂 Directory Structure
+# ⚙️ Data Pipeline
+
+The engine executes every processing stage in chronological order.
+
+```text
+Raw Formula 1 Database
+        │
+        ▼
+Bootstrap Historical Dataset
+        │
+        ▼
+Bridge Missing Seasons
+        │
+        ▼
+Generate Track Profiles
+        │
+        ▼
+Generate Dynamic Power Ratings
+        │
+        ▼
+Generate Driver Mastery Matrix
+        │
+        ▼
+Build JSON Exports
+        │
+        ▼
+React Dashboard
+```
+
+---
+
+# 📂 Project Structure
 
 ```text
 analytics_engine/
 │
 ├── .github/
 │   └── workflows/
-│       └── analytics_pipeline.yml   # Cloud Automation script (runs every Monday)
+│       └── analytics_pipeline.yml
 │
 ├── data/
-│   ├── raw/                         # Immutable CSVs (Historical Lake)
-│   ├── cache/                       # FastF1 SQLite local caching (prevents API rate limits)
-│   ├── features/                    # Engineered ML feature metrics
-│   └── export/                      # Final structured JSONs for the React UI
+│   ├── raw/
+│   ├── cache/
+│   ├── features/
+│   └── export/
 │
 ├── src/
+│   │
 │   ├── ingestion/
-│   │   ├── bootstrap.py             # One-time script: Processes the 2006-2023 Kaggle DB Dump
-│   │   ├── bridge_seasons.py        # Connects the Kaggle dump to current day via Jolpica API
-│   │   └── update.py                # Weekly surgical script: Fetches only the newest race
+│   │   ├── bootstrap.py
+│   │   ├── bridge_seasons.py
+│   │   └── update.py
 │   │
 │   ├── features/
-│   │   ├── track_profile.py         # Generates Tire Deg proxies & identifies Street Circuits
-│   │   ├── power_ratings.py         # Calculates Team/Driver Momentum via Exponential Averages
-│   │   └── mastery.py               # Evaluates driver strengths against Track Fingerprints
+│   │   ├── track_profile.py
+│   │   ├── power_ratings.py
+│   │   └── mastery.py
 │   │
 │   └── export/
-│       └── json_builder.py          # Formats analytical tables into clean JSON objects
+│       └── json_builder.py
 │
-├── main.py                          # The Orchestrator (Executes the pipeline sequentially)
-├── requirements.txt                 # Python dependencies (pandas, fastf1)
-└── README.md                        # Documentation
-
+├── main.py
+├── requirements.txt
+└── README.md
 ```
 
 ---
 
-## 🧠 Engineered Features (The Analytics Core)
+# 🧠 Analytics Engine
 
-The Fanalytics Engine extracts context-aware signals from raw historical logs to lay the foundation for advanced machine learning model training:
+## 📈 Dynamic Power Ratings
 
-### 1. Dynamic Power Ratings (`power_ratings.py`)
+The engine estimates current driver and constructor performance using an **Exponential Moving Average (EMA)** over the previous ten races.
 
-Formula 1 performance is highly fluid. We use an **Exponential Moving Average (EMA)** spanning the last 10 races to compute team and driver "Current Form."
+### Features Generated
 
-* **Data Leakage Prevention:** All moving calculations incorporate a `.shift(1)` step. This guarantees that a competitor's momentum rating strictly reflects what was known *going into* Sunday morning, isolating it completely from that afternoon's race results.
+- Driver Momentum
+- Constructor Momentum
+- Driver Racecraft Index
+- Positions Gained
+- Time-decayed performance weighting
 
-### 2. Track Fingerprinting (`track_profile.py`)
+### Preventing Data Leakage
 
-* **Tire Degradation Index:** Real-time tire compounds and wear metrics are heavily restricted. As a proxy, this script analyzes decades of historical pit stop frequencies under dry race conditions. Using Quantile Cuts (`pd.qcut`), tracks are mathematically bucketed into a standardized 1–5 structural degradation scale.
-* **Circuit Layout Typology:** Circuits are rigidly mapped as Street Circuit (1) or Permanent Road Course (0) to dictate handling, downforce, and qualifying-weight contexts.
+Every rolling calculation applies:
 
-### 3. Hierarchical Driver Mastery (`mastery.py`)
+```python
+.shift(1)
+```
 
-This measures how effectively a driver's style matches a circuit's architecture. To prevent breaking the system when a driver encounters a track for the first time (e.g., a rookie racing at Las Vegas), the engine utilizes a custom **Hierarchical Imputation** fallback chain:
+This ensures that every prediction only uses information available **before** the current race.
+
+---
+
+## 🏁 Track Fingerprinting
+
+Every Formula 1 circuit receives its own engineered profile.
+
+### Tire Degradation Index
+
+Historical pit stop frequency is used as a proxy for tyre wear.
+
+Using
+
+```python
+pd.qcut()
+```
+
+tracks are divided into five degradation categories:
+
+| Index | Interpretation |
+|---------|---------------|
+| 1 | Very Low Degradation |
+| 2 | Low |
+| 3 | Medium |
+| 4 | High |
+| 5 | Very High |
+
+### Circuit Classification
+
+Each circuit is classified as:
+
+- Permanent Circuit
+- Street Circuit
+
+This provides contextual information for later driver analysis.
+
+---
+
+## 🧠 Driver–Track Mastery Matrix
+
+Rather than assuming every circuit suits every driver equally, the engine learns driver performance across different track characteristics.
+
+If historical information is unavailable, the engine performs hierarchical fallback:
 
 ```text
-Track-Specific History Average ──► Layout Average (e.g., Street Performance) ──► General Career Average ──► Grid Midpoint (10.5)
+Track History
+      │
+      ▼
+Street Circuit History
+      │
+      ▼
+Career Average
+      │
+      ▼
+Grid Midpoint (10.5)
+```
 
+This prevents missing values while preserving realistic estimates.
+
+---
+
+# 📦 JSON Export Layer
+
+The engineered feature datasets are converted into frontend-friendly JSON objects.
+
+Generated outputs include:
+
+```text
+insights.json
+
+tracks.json
+```
+
+These files are directly consumed by the React application without requiring a dedicated backend server.
+
+---
+
+# ☁️ Cloud Automation
+
+The entire pipeline is deployed using **GitHub Actions**.
+
+Every Monday the workflow automatically:
+
+- 🚀 Creates a fresh Ubuntu runner
+- 🐍 Installs Python
+- 📦 Installs dependencies
+- 📥 Updates historical race data
+- ⚙️ Rebuilds every engineered feature
+- 📄 Regenerates JSON exports
+- ✅ Commits changes
+- ☁️ Pushes updates back to GitHub
+
+No manual intervention is required.
+
+---
+
+# 🔄 Weekly Workflow
+
+```text
+Monday (08:00 UTC)
+
+        │
+
+        ▼
+
+GitHub Actions Runner
+
+        │
+
+        ▼
+
+Fetch Latest Race Data
+
+        │
+
+        ▼
+
+Update Historical Database
+
+        │
+
+        ▼
+
+Generate Engineered Features
+
+        │
+
+        ▼
+
+Export JSON Files
+
+        │
+
+        ▼
+
+Commit Changes
+
+        │
+
+        ▼
+
+Push to Repository
+
+        │
+
+        ▼
+
+React Dashboard Updates
 ```
 
 ---
 
-## ⚙️ Cloud Automation (GitHub Actions)
+# 🚀 Getting Started
 
-The backend pipeline operates completely hands-free in the cloud:
-
-* **The Trigger:** A GitHub Actions cron scheduler set for `0 8 * * 1` (Every Monday at 08:00 UTC).
-* **The Execution:** Spins up an isolated Ubuntu runner, mounts Python 3.11, restores dependencies, and handles incremental data aggregation via `main.py`.
-* **The Output:** A deployment bot verifies if new telemetry rows were pushed. If a race concluded over the weekend, the bot automatically signs, commits, and pushes the new data chunks back to the repository, instantly causing your live Vercel dashboard UI to refresh.
-
----
-
-## 🛠️ Local Setup & Usage
-
-To execute or develop the pipeline locally on your machine:
-
-### 1. Install Dependencies
+## 1️⃣ Clone the Repository
 
 ```bash
-cd analytics_engine
-pip install -r requirements.txt
+git clone https://github.com/<username>/fanalytics.git
 
+cd fanalytics/analytics_engine
 ```
 
-### 2. Hydrate the Data Lake (First Time Only)
+---
 
-Ensure the initial open-source Ergast CSV base tables (`races.csv`, `results.csv`, `drivers.csv`, `constructors.csv`, `pit_stops.csv`) have been extracted into your `data/raw/` directory. Then execute the setup chain:
+## 2️⃣ Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## 3️⃣ Build the Historical Dataset (First-Time Setup)
+
+Place the historical Formula 1 CSV files inside:
+
+```text
+analytics_engine/data/raw/
+```
+
+Then run:
 
 ```bash
 python src/ingestion/bootstrap.py
-python src/ingestion/bridge_seasons.py
 
+python src/ingestion/bridge_seasons.py
 ```
 
-### 3. Run the Production Pipeline
+---
 
-To run an incremental check, rebuild your feature engines, and re-export the React JSON schema files, simply execute the orchestrator root file:
+## 4️⃣ Execute the Complete Pipeline
 
 ```bash
 python main.py
-
 ```
 
-```
+The orchestrator automatically:
 
-```
+- Updates race data
+- Generates engineered features
+- Exports JSON files
+- Prepares data for the React frontend
+
+---
+
+# 🛠️ Technology Stack
+
+| Category | Technologies |
+|-----------|--------------|
+| Programming Language | Python 3.11 |
+| Data Processing | Pandas |
+| Formula 1 APIs | FastF1, Jolpica (Ergast) |
+| Data Storage | CSV Data Lake |
+| Feature Engineering | Pandas, NumPy |
+| Automation | GitHub Actions |
+| Export Format | JSON |
+| Frontend Consumer | React + TypeScript |
+| Deployment | GitHub + Vercel |
+
+---
+
+# 📈 Engineered Outputs
+
+| Output | Description |
+|---------|-------------|
+| `master_historical.csv` | Unified historical Formula 1 database |
+| `track_profiles.csv` | Circuit fingerprints and tyre degradation metrics |
+| `power_ratings.csv` | Driver and constructor momentum metrics |
+| `mastery_matrix.csv` | Driver suitability across circuit types |
+| `insights.json` | Driver analytics for the frontend |
+| `tracks.json` | Track analytics for the frontend |
+
+---
+
+# 🎯 Future Improvements
+
+- 🤖 Machine Learning race outcome prediction
+- 🛞 Tyre strategy recommendation engine
+- 🌦️ Weather-aware race simulations
+- 📊 Driver similarity clustering
+- 🏆 Constructor performance forecasting
+- 📡 Live telemetry integration
+- 🌐 REST API
+- 🗄️ PostgreSQL Data Warehouse
+- 🐳 Dockerized deployment
+
+---
+
+# 📜 License
+
+This project is intended for educational, research, and portfolio purposes.
+
+Formula 1 data originates from publicly available historical datasets together with the Jolpica (formerly Ergast) API.
+
+---
+
+<div align="center">
+
+### 🏎️ Built for Formula 1 fans who want to understand **why** races are won—not just **who** won them.
+
+⭐ If you found this project interesting, consider giving it a star!
+
+</div>
