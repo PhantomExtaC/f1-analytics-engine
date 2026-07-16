@@ -1,84 +1,92 @@
-# Fanalytics Data Engine
+# 🏎️ Fanalytics Data Engine
 
-## 🚀 Overview
-The Fanalytics Data Engine is a standalone Python-based ETL (Extract, Transform, Load) pipeline. Its purpose is to ingest historical and live Formula 1 data, engineer advanced analytical features, and export static JSON files for the Fanalytics React dashboard.
+[![Pipeline Status](https://shields.io)](https://github.com)
+[![Python](https://shields.io)](https://python.org)
+[![Tech Stack](https://shields.io|%20FastF1%20|%20Jolpica-FF1801.svg?style=flat-square)](https://github.com)
+
+A high-performance, standalone Python ETL (Extract, Transform, Load) pipeline. It ingests historical and live Formula 1 data, engineers advanced analytical features, and exports optimized static JSON assets to power the **Fanalytics React Dashboard**.
+
+---
 
 ## 🏗️ Architecture & Data Flow
 
+```mermaid
+graph TD
+    A[Historical DB Dump] & B[Live API Updates: Jolpica/FastF1] --> C[1. Ingestion Layer <br><i>data/raw/</i>]
+    C --> D[2. Pre-Processing & Feature Engineering]
+    D --> D1[Dynamic Power Ratings <br><i>Time-decayed performance</i>]
+    D --> D2[Track Fingerprinting <br><i>Tire deg, street vs. permanent</i>]
+    D --> D3[Mastery Matrix <br><i>Driver/Track affinity</i>]
+    D1 & D2 & D3 --> E[3. Analytics Warehouse <br><i>pandas DataFrames</i>]
+    E --> F[4. Export Layer <br><i>data/export/</i>]
+    F --> F1[drivers.json, teams.json, tracks.json, insights.json]
+    F1 --> G[5. GitHub Actions <br><i>Automated Cron Job</i>]
+    G --> H[Commit JSONs to Repo] --> I[Trigger Vercel UI Deploy]
+
+    style A fill:#2d3748,stroke:#4a5568,stroke-width:1px,color:#fff
+    style B fill:#2d3748,stroke:#4a5568,stroke-width:1px,color:#fff
+    style C fill:#1a365d,stroke:#2b6cb0,stroke-width:2px,color:#fff
+    style D fill:#2c5282,stroke:#4299e1,stroke-width:2px,color:#fff
+    style E fill:#234e52,stroke:#319795,stroke-width:2px,color:#fff
+    style F fill:#744210,stroke:#b7791f,stroke-width:2px,color:#fff
+    style G fill:#742a2a,stroke:#e53e3e,stroke-width:2px,color:#fff
+```
+
+---
+
+## 📂 Directory Structure
+
 ```text
-[Historical DB Dump] + [Live API Updates (Jolpica/FastF1)]
-          │
-          ▼
-1. INGESTION LAYER (data/raw/)
-          │
-          ▼
-2. PRE-PROCESSING & FEATURE ENGINEERING
-   ├─ Dynamic Power Ratings (Time-decayed performance)
-   ├─ Track Fingerprinting (Pit-stop based tire deg, street vs. perm)
-   └─ Driver/Track Mastery Matrix
-          │
-          ▼
-3. ANALYTICS WAREHOUSE (pandas DataFrames)
-          │
-          ▼
-4. EXPORT LAYER (data/export/)
-   └─ drivers.json, teams.json, tracks.json, insights.json
-          │
-          ▼
-5. GITHUB ACTIONS (Automated Cron Job)
-   └─ Commits JSON files to repo -> Triggers Vercel UI deploy
-
-
-
-** ## 📂 Directory Structure**
-
 analytics_engine/
 │
 ├── .github/workflows/
-│   └── pipeline.yml          # GitHub Actions cron scheduler
+│   └── pipeline.yml          # GitHub Actions CI/CD cron scheduler
 │
 ├── data/
-│   ├── raw/                  # Immutable raw CSVs (Bootstrapped data)
-│   └── export/               # Final JSONs ready for the React frontend
+│   ├── raw/                  # Immutable raw CSVs & bootstrapped assets
+│   └── export/               # Production-ready JSONs for React frontend
 │
 ├── src/
 │   ├── ingestion/
-│   │   ├── bootstrap.py      # One-time script to load historical DB dump
-│   │   └── update.py         # Incremental API fetcher for recent races
+│   │   ├── bootstrap.py      # One-time historical database seeder
+│   │   └── update.py         # Incremental live API fetcher for recent GPs
 │   │
 │   ├── features/
-│   │   ├── track_profile.py  # Calculates tire deg proxies & circuit types
-│   │   ├── power_ratings.py  # Calculates time-decayed team/driver momentum
-│   │   └── mastery.py        # Driver strengths/weaknesses per track
+│   │   ├── track_profile.py  # Tire degradation proxies & circuit typing
+│   │   ├── power_ratings.py  # Time-decayed team & driver momentum engines
+│   │   └── mastery.py        # Driver strengths/weaknesses matrix per track
 │   │
 │   └── export/
-│       └── json_builder.py   # Formats data to match React TypeScript interfaces
+│       └── json_builder.py   # Formats payloads to match React TypeScript interfaces
 │
-├── main.py                   # The Orchestrator (Runs the entire pipeline in order)
-├── requirements.txt          # Python dependencies
+├── main.py                   # Global Orchestrator (Executes full ETL sequence)
+├── requirements.txt          # Python runtime dependencies
 └── README.md                 # Project documentation
+```
 
-
-## ⚙️ The GitHub Actions Workflow
-The pipeline runs autonomously in the cloud via GitHub Actions.
-
-Trigger: Scheduled for every Monday at 08:00 UTC.
-
-Execution:
-
-Spins up a temporary Ubuntu server.
-
-Installs Python and requirements.txt.
-
-Runs main.py to fetch the weekend's race and update features.
-
-Generates new JSON files in data/export/.
-
-Automatically commits and pushes the changes to the main branch.
+---
 
 ## 📊 Engineered Features (Phase 1)
-Tire Degradation Index: Calculated by averaging historical pit stops per race at a specific circuit under dry conditions.
 
-Time-Decayed Form: Recent race results are weighted heavier than results from the beginning of the season to accurately track momentum.
+*   **Tire Degradation Index** 
+    Calculates dynamic degradation proxies by aggregating and filtering historical pit-stop windows exclusively under dry racing conditions.
+*   **Time-Decayed Form Factor** 
+    Applies an exponential time-decay algorithm to recent Grand Prix placements. Recent weekend forms are weighted heavier than early-season points to accurately map current team/driver momentum.
+*   **Track Suitability Matrix** 
+    Cross-references a driver's historical scoring metrics against specific structural track profiles (e.g., *High-Degradation Street Circuits* vs. *Low-Degradation Permanent Tracks*).
 
-Track Suitability: Cross-referencing driver averages on specific circuit profiles (e.g., Street/High-Deg vs. Permanent/Low-Deg).
+---
+
+## ⚙️ Automated GitHub Actions Workflow
+
+The engine operates entirely hands-free in the cloud via automated infrastructure.
+
+```yaml
+Trigger: 🕒 Every Monday at 08:00 UTC (Post-Race Weekend)
+```
+
+1.  **Environment Provisioning:** Spins up an isolated, ephemeral Ubuntu container.
+2.  **Dependency Setup:** Installs Python environment and cached `requirements.txt` targets.
+3.  **Pipeline Orchestration:** Executes `main.py` to target, fetch, and process the latest race weekend data.
+4.  **Asset Generation:** Overwrites local feature states and rebuilds static data in `data/export/`.
+5.  **Autonomous Deployment:** Automatically signs, commits, and pushes modified tracking JSONs back to `main`, instantly triggering your frontend Vercel deployment hook.
