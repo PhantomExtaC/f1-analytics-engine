@@ -1,35 +1,42 @@
+```markdown
 # 🏎️ Fanalytics Data Engine
 
-[![Pipeline Status](https://shields.io)](https://github.com)
-[![Python](https://shields.io)](https://python.org)
-[![Tech Stack](https://shields.io|%20FastF1%20|%20Jolpica-FF1801.svg?style=flat-square)](https://github.com)
+![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python)
+![Pandas](https://img.shields.io/badge/Pandas-Data_Engineering-150458?logo=pandas)
+![FastF1](https://img.shields.io/badge/FastF1-Jolpica_API-red)
+![GitHub Actions](https://img.shields.io/badge/Automated-Cron_Job-2088FF?logo=github-actions)
 
-A high-performance, standalone Python ETL (Extract, Transform, Load) pipeline. It ingests historical and live Formula 1 data, engineers advanced analytical features, and exports optimized static JSON assets to power the **Fanalytics React Dashboard**.
+## 🚀 Overview
+The Fanalytics Data Engine is a standalone, automated Python ETL (Extract, Transform, Load) pipeline. It acts as the algorithmic "brain" behind the Fanalytics React dashboard. 
+
+Instead of relying on basic API queries that just list static point totals, this engine processes deep historical Formula 1 data spanning two decades. It dynamically engineers complex predictive metrics (like Driver Momentum, Racecraft Indices, and Track Degradation Scales) and exports polished, lightweight JSON models for the React frontend to serve directly.
 
 ---
 
 ## 🏗️ Architecture & Data Flow
 
-```mermaid
-graph TD
-    A[Historical DB Dump] & B[Live API Updates: Jolpica/FastF1] --> C[1. Ingestion Layer <br><i>data/raw/</i>]
-    C --> D[2. Pre-Processing & Feature Engineering]
-    D --> D1[Dynamic Power Ratings <br><i>Time-decayed performance</i>]
-    D --> D2[Track Fingerprinting <br><i>Tire deg, street vs. permanent</i>]
-    D --> D3[Mastery Matrix <br><i>Driver/Track affinity</i>]
-    D1 & D2 & D3 --> E[3. Analytics Warehouse <br><i>pandas DataFrames</i>]
-    E --> F[4. Export Layer <br><i>data/export/</i>]
-    F --> F1[drivers.json, teams.json, tracks.json, insights.json]
-    F1 --> G[5. GitHub Actions <br><i>Automated Cron Job</i>]
-    G --> H[Commit JSONs to Repo] --> I[Trigger Vercel UI Deploy]
+The pipeline executes in a strict chronological sequence, turning raw relational database inputs into highly structured features.
 
-    style A fill:#2d3748,stroke:#4a5568,stroke-width:1px,color:#fff
-    style B fill:#2d3748,stroke:#4a5568,stroke-width:1px,color:#fff
-    style C fill:#1a365d,stroke:#2b6cb0,stroke-width:2px,color:#fff
-    style D fill:#2c5282,stroke:#4299e1,stroke-width:2px,color:#fff
-    style E fill:#234e52,stroke:#319795,stroke-width:2px,color:#fff
-    style F fill:#744210,stroke:#b7791f,stroke-width:2px,color:#fff
-    style G fill:#742a2a,stroke:#e53e3e,stroke-width:2px,color:#fff
+```text
+[Historical Kaggle DB Dump (2006-2023)] + [Live API Updates via FastF1/Jolpica]
+          │
+          ▼
+1. INGESTION LAYER (data/raw/)
+          │
+          ▼
+2. FEATURE FACTORY (pandas DataFrames)
+   ├─ Dynamic Power Ratings (Time-decayed performance momentum)
+   ├─ Track Fingerprinting (Pit-stop based tire deg, street vs. perm)
+   └─ Driver/Track Mastery Matrix (Hierarchical track suitability)
+          │
+          ▼
+3. EXPORT LAYER (data/export/)
+   └─ insights.json, tracks.json (Ready for React TypeScript Interfaces)
+          │
+          ▼
+4. CLOUD AUTOMATION (GitHub Actions)
+   └─ Commits JSON files to repo -> Triggers Vercel UI deploy
+
 ```
 
 ---
@@ -39,54 +46,105 @@ graph TD
 ```text
 analytics_engine/
 │
-├── .github/workflows/
-│   └── pipeline.yml          # GitHub Actions CI/CD cron scheduler
+├── .github/
+│   └── workflows/
+│       └── analytics_pipeline.yml   # Cloud Automation script (runs every Monday)
 │
 ├── data/
-│   ├── raw/                  # Immutable raw CSVs & bootstrapped assets
-│   └── export/               # Production-ready JSONs for React frontend
+│   ├── raw/                         # Immutable CSVs (Historical Lake)
+│   ├── cache/                       # FastF1 SQLite local caching (prevents API rate limits)
+│   ├── features/                    # Engineered ML feature metrics
+│   └── export/                      # Final structured JSONs for the React UI
 │
 ├── src/
 │   ├── ingestion/
-│   │   ├── bootstrap.py      # One-time historical database seeder
-│   │   └── update.py         # Incremental live API fetcher for recent GPs
+│   │   ├── bootstrap.py             # One-time script: Processes the 2006-2023 Kaggle DB Dump
+│   │   ├── bridge_seasons.py        # Connects the Kaggle dump to current day via Jolpica API
+│   │   └── update.py                # Weekly surgical script: Fetches only the newest race
 │   │
 │   ├── features/
-│   │   ├── track_profile.py  # Tire degradation proxies & circuit typing
-│   │   ├── power_ratings.py  # Time-decayed team & driver momentum engines
-│   │   └── mastery.py        # Driver strengths/weaknesses matrix per track
+│   │   ├── track_profile.py         # Generates Tire Deg proxies & identifies Street Circuits
+│   │   ├── power_ratings.py         # Calculates Team/Driver Momentum via Exponential Averages
+│   │   └── mastery.py               # Evaluates driver strengths against Track Fingerprints
 │   │
 │   └── export/
-│       └── json_builder.py   # Formats payloads to match React TypeScript interfaces
+│       └── json_builder.py          # Formats analytical tables into clean JSON objects
 │
-├── main.py                   # Global Orchestrator (Executes full ETL sequence)
-├── requirements.txt          # Python runtime dependencies
-└── README.md                 # Project documentation
+├── main.py                          # The Orchestrator (Executes the pipeline sequentially)
+├── requirements.txt                 # Python dependencies (pandas, fastf1)
+└── README.md                        # Documentation
+
 ```
 
 ---
 
-## 📊 Engineered Features (Phase 1)
+## 🧠 Engineered Features (The Analytics Core)
 
-*   **Tire Degradation Index** 
-    Calculates dynamic degradation proxies by aggregating and filtering historical pit-stop windows exclusively under dry racing conditions.
-*   **Time-Decayed Form Factor** 
-    Applies an exponential time-decay algorithm to recent Grand Prix placements. Recent weekend forms are weighted heavier than early-season points to accurately map current team/driver momentum.
-*   **Track Suitability Matrix** 
-    Cross-references a driver's historical scoring metrics against specific structural track profiles (e.g., *High-Degradation Street Circuits* vs. *Low-Degradation Permanent Tracks*).
+The Fanalytics Engine extracts context-aware signals from raw historical logs to lay the foundation for advanced machine learning model training:
+
+### 1. Dynamic Power Ratings (`power_ratings.py`)
+
+Formula 1 performance is highly fluid. We use an **Exponential Moving Average (EMA)** spanning the last 10 races to compute team and driver "Current Form."
+
+* **Data Leakage Prevention:** All moving calculations incorporate a `.shift(1)` step. This guarantees that a competitor's momentum rating strictly reflects what was known *going into* Sunday morning, isolating it completely from that afternoon's race results.
+
+### 2. Track Fingerprinting (`track_profile.py`)
+
+* **Tire Degradation Index:** Real-time tire compounds and wear metrics are heavily restricted. As a proxy, this script analyzes decades of historical pit stop frequencies under dry race conditions. Using Quantile Cuts (`pd.qcut`), tracks are mathematically bucketed into a standardized 1–5 structural degradation scale.
+* **Circuit Layout Typology:** Circuits are rigidly mapped as Street Circuit (1) or Permanent Road Course (0) to dictate handling, downforce, and qualifying-weight contexts.
+
+### 3. Hierarchical Driver Mastery (`mastery.py`)
+
+This measures how effectively a driver's style matches a circuit's architecture. To prevent breaking the system when a driver encounters a track for the first time (e.g., a rookie racing at Las Vegas), the engine utilizes a custom **Hierarchical Imputation** fallback chain:
+
+```text
+Track-Specific History Average ──► Layout Average (e.g., Street Performance) ──► General Career Average ──► Grid Midpoint (10.5)
+
+```
 
 ---
 
-## ⚙️ Automated GitHub Actions Workflow
+## ⚙️ Cloud Automation (GitHub Actions)
 
-The engine operates entirely hands-free in the cloud via automated infrastructure.
+The backend pipeline operates completely hands-free in the cloud:
 
-```yaml
-Trigger: 🕒 Every Monday at 08:00 UTC (Post-Race Weekend)
+* **The Trigger:** A GitHub Actions cron scheduler set for `0 8 * * 1` (Every Monday at 08:00 UTC).
+* **The Execution:** Spins up an isolated Ubuntu runner, mounts Python 3.11, restores dependencies, and handles incremental data aggregation via `main.py`.
+* **The Output:** A deployment bot verifies if new telemetry rows were pushed. If a race concluded over the weekend, the bot automatically signs, commits, and pushes the new data chunks back to the repository, instantly causing your live Vercel dashboard UI to refresh.
+
+---
+
+## 🛠️ Local Setup & Usage
+
+To execute or develop the pipeline locally on your machine:
+
+### 1. Install Dependencies
+
+```bash
+cd analytics_engine
+pip install -r requirements.txt
+
 ```
 
-1.  **Environment Provisioning:** Spins up an isolated, ephemeral Ubuntu container.
-2.  **Dependency Setup:** Installs Python environment and cached `requirements.txt` targets.
-3.  **Pipeline Orchestration:** Executes `main.py` to target, fetch, and process the latest race weekend data.
-4.  **Asset Generation:** Overwrites local feature states and rebuilds static data in `data/export/`.
-5.  **Autonomous Deployment:** Automatically signs, commits, and pushes modified tracking JSONs back to `main`, instantly triggering your frontend Vercel deployment hook.
+### 2. Hydrate the Data Lake (First Time Only)
+
+Ensure the initial open-source Ergast CSV base tables (`races.csv`, `results.csv`, `drivers.csv`, `constructors.csv`, `pit_stops.csv`) have been extracted into your `data/raw/` directory. Then execute the setup chain:
+
+```bash
+python src/ingestion/bootstrap.py
+python src/ingestion/bridge_seasons.py
+
+```
+
+### 3. Run the Production Pipeline
+
+To run an incremental check, rebuild your feature engines, and re-export the React JSON schema files, simply execute the orchestrator root file:
+
+```bash
+python main.py
+
+```
+
+```
+
+```
