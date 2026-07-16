@@ -30,7 +30,8 @@ The Fanalytics Data Engine is a standalone Python-based ETL (Extract, Transform,
 
 
 
-📂 Directory Structure
+** ## 📂 Directory Structure**
+
 analytics_engine/
 │
 ├── .github/workflows/
@@ -58,7 +59,7 @@ analytics_engine/
 └── README.md                 # Project documentation
 
 
-⚙️ The GitHub Actions Workflow
+## ⚙️ The GitHub Actions Workflow
 The pipeline runs autonomously in the cloud via GitHub Actions.
 
 Trigger: Scheduled for every Monday at 08:00 UTC.
@@ -75,7 +76,7 @@ Generates new JSON files in data/export/.
 
 Automatically commits and pushes the changes to the main branch.
 
-📊 Engineered Features (Phase 1)
+## 📊 Engineered Features (Phase 1)
 Tire Degradation Index: Calculated by averaging historical pit stops per race at a specific circuit under dry conditions.
 
 Time-Decayed Form: Recent race results are weighted heavier than results from the beginning of the season to accurately track momentum.
